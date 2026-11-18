@@ -460,6 +460,19 @@ game.api = {
   setAutopilot(target) {
     game.autopilot = target ? { target } : null;
   },
+  // Snap the chase camera to its final framing at once. Under headless
+  // virtual time only ~10-35 sim steps actually run before the screenshot,
+  // so the lerped camera never converges — staging must be correct on the
+  // very first rendered frame, not after seconds of driving.
+  snapCamera() {
+    const focus = game.driving
+      ? { x: game.driving.x, z: game.driving.z, heading: game.driving.heading }
+      : { x: game.player.x, z: game.player.z, heading: game.cameraYaw };
+    const dist = game.driving ? 12 : 9.5;
+    const height = game.driving ? 5 : 4.2;
+    camera.position.set(focus.x - Math.sin(focus.heading) * dist, height, focus.z - Math.cos(focus.heading) * dist);
+    camera.lookAt(focus.x, 1.6, focus.z);
+  },
   toast: (m, s) => hud.toast(m, s),
   get player() {
     return game.player;
@@ -525,6 +538,12 @@ if (shotName) {
   document.getElementById('title-screen').classList.add('hidden');
   const staged = stageShot(shotName, game, { setMissionForShot, traffic, police, pedestrians });
   void staged;
+  // Frozen composition: no autopilot driving (the step count before the
+  // screenshot is unpredictable under virtual time), camera snapped to
+  // its final framing now. Traffic, pedestrians and police still animate
+  // around the frozen subjects; staged cruisers/walkers hold their marks.
+  game.api.setAutopilot(null);
+  game.api.snapCamera();
   hud.setMoney(game.money);
   hud.setWanted(game.wanted);
   let painted = 0;

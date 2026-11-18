@@ -68,6 +68,10 @@ export function createPolice(scene, random) {
       const pos = resolveCollision({ x: nx, z: nz }, 1.6);
       car.x = pos.x;
       car.z = pos.z;
+      // Cruisers never drive into the sea or onto the pier: the chase ends
+      // at the pier gate instead of floating on the water.
+      car.x = Math.max(-200, Math.min(205, car.x));
+      car.z = Math.max(-205, Math.min(205, car.z));
       car.group.position.set(car.x, 0, car.z);
       car.group.rotation.y = car.heading;
       for (const wheel of car.wheels) wheel.rotation.x += car.speed * dt * 2;

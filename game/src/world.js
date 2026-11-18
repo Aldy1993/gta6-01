@@ -201,11 +201,12 @@ export function createWorld(scene, random) {
   group.add(sea);
   // Pier 9: low wooden deck running south into the sea at x=-210, with
   // plank slats, mooring posts, lamps and a boat tied up alongside.
+  // Deck top sits at 0.15 so cars driving onto it don't sink into the wood.
   const pierDeck = new THREE.Mesh(
     new THREE.BoxGeometry(12, 0.3, 100),
     new THREE.MeshStandardMaterial({ color: 0x8a6a42, roughness: 1 }),
   );
-  pierDeck.position.set(-210, 0.15, 200);
+  pierDeck.position.set(-210, 0, 200);
   pierDeck.castShadow = true;
   pierDeck.receiveShadow = true;
   group.add(pierDeck);
@@ -213,7 +214,7 @@ export function createWorld(scene, random) {
   const plankMatB = new THREE.MeshStandardMaterial({ color: 0x7a5a38, roughness: 1 });
   for (let pz = 154; pz <= 246; pz += 4) {
     const plank = new THREE.Mesh(new THREE.BoxGeometry(11.4, 0.08, 2.2), (pz / 4) % 2 === 0 ? plankMatA : plankMatB);
-    plank.position.set(-210, 0.34, pz);
+    plank.position.set(-210, 0.19, pz);
     group.add(plank);
   }
   const postMat = new THREE.MeshStandardMaterial({ color: 0x5d4126, roughness: 1 });
