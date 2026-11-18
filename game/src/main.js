@@ -532,7 +532,10 @@ if (shotName) {
     stepWorld(STEP);
     render();
     painted += 1;
-    if (painted < 240) requestAnimationFrame(paintLoop);
+    // v2: 90 steps (1.5 s) only — under virtual-time the frame count is
+    // what the screenshot actually gets, and a short run keeps the staged
+    // subjects near their marks instead of driving ~100 m past them.
+    if (painted < 90) requestAnimationFrame(paintLoop);
     else window.__shotReady = true;
   };
   requestAnimationFrame(paintLoop);

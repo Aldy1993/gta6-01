@@ -8,8 +8,8 @@ export const WORLD = {
   halfSize: 220,
   blockSize: 44,
   roadWidth: 12,
-  skyColor: 0xffb36b,
-  fogColor: 0xf2a35e,
+  skyColor: 0xffcf8f,
+  fogColor: 0xf7b06a,
   sunPosition: [-140, 90, -180],
 };
 
@@ -75,7 +75,7 @@ export const MISSIONS = [
     briefing:
       'One last job: a sealed package for the pier at the end of the boardwalk. The whole precinct is watching. Deliver it and Rico is free.',
     pickup: { x: -22, z: -110 },
-    dropoff: { x: -198, z: 198 },
+    dropoff: { x: -210, z: 238 },
     reward: 900,
   },
 ];

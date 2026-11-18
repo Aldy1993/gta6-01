@@ -19,10 +19,13 @@ export function createPolice(scene, random) {
     return car;
   }
 
-  // Staging only: put a cruiser exactly where a screenshot needs it.
+  // Staging only: put a cruiser exactly where a screenshot needs it and
+  // freeze it there (lights still flash) so the 4 s screenshot run cannot
+  // drive it out of frame.
   function placeCruiser(x, z, heading) {
     const car = createDrivableCar(scene, 0xf5f5f5, x, z, heading, true, false);
     car.chaseSpeed = POLICE.chaseSpeed;
+    car.staged = true;
     cruisers.push(car);
     return car;
   }
@@ -38,10 +41,17 @@ export function createPolice(scene, random) {
     const flashingRed = Math.floor(flash * 4) % 2 === 0;
     for (const car of cruisers) {
       if (car.lightBar) {
-        car.lightBar.material.emissive.setHex(flashingRed ? 0xff2222 : 0x2266ff);
-        car.lightBar.material.color.setHex(flashingRed ? 0xff2222 : 0x2266ff);
+        car.lightBar.material.emissive.setHex(flashingRed ? 0xff2222 : 0x331111);
+        car.lightBar.material.color.setHex(flashingRed ? 0xff2222 : 0x661111);
+        car.lightBar.material.emissiveIntensity = flashingRed ? 3 : 0.4;
       }
-      if (car.headlights) car.headlights.intensity = flashingRed ? 30 : 12;
+      if (car.lightBar2) {
+        car.lightBar2.material.emissive.setHex(flashingRed ? 0x111133 : 0x2266ff);
+        car.lightBar2.material.color.setHex(flashingRed ? 0x111166 : 0x2266ff);
+        car.lightBar2.material.emissiveIntensity = flashingRed ? 0.4 : 3;
+      }
+      if (car.headlights) car.headlights.intensity = 14;
+      if (car.staged) continue; // staged cruiser holds its mark, lights on
       // Steer toward the player, ram when close.
       const dx = playerPos.x - car.x;
       const dz = playerPos.z - car.z;

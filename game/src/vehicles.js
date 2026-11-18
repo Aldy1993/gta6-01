@@ -29,30 +29,43 @@ export function buildCarMesh(color, isPolice, isSport) {
     wheels.push(wheel);
   }
   let lightBar = null;
+  let lightBar2 = null;
   let headlights = null;
   if (isPolice) {
+    // Black-and-white livery: black hood + trunk panels over a white body.
+    const blackMat = new THREE.MeshStandardMaterial({ color: 0x14181d, roughness: 0.4, metalness: 0.3 });
+    const hood = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.1, 1.3), blackMat);
+    hood.position.set(0, 1.04, 1.45);
+    group.add(hood);
+    const trunk = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.1, 1.0), blackMat);
+    trunk.position.set(0, 1.04, -1.6);
+    group.add(trunk);
+    const door = new THREE.Mesh(new THREE.BoxGeometry(2.04, 0.42, 1.6), blackMat);
+    door.position.set(0, 0.72, -0.2);
+    group.add(door);
+    // Split light bar: red left, blue right — both flash in police.step.
     lightBar = new THREE.Mesh(
-      new THREE.BoxGeometry(1.4, 0.22, 0.5),
-      new THREE.MeshStandardMaterial({ color: 0xff2222, emissive: 0xff2222, emissiveIntensity: 2 }),
+      new THREE.BoxGeometry(0.68, 0.24, 0.5),
+      new THREE.MeshStandardMaterial({ color: 0xff2222, emissive: 0xff2222, emissiveIntensity: 2.5 }),
     );
-    lightBar.position.set(0, 1.75, -0.1);
+    lightBar.position.set(-0.36, 1.78, -0.1);
     group.add(lightBar);
-    const stripe = new THREE.Mesh(
-      new THREE.BoxGeometry(2.02, 0.3, 4.22),
-      new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.5 }),
+    lightBar2 = new THREE.Mesh(
+      new THREE.BoxGeometry(0.68, 0.24, 0.5),
+      new THREE.MeshStandardMaterial({ color: 0x2266ff, emissive: 0x2266ff, emissiveIntensity: 2.5 }),
     );
-    stripe.position.y = 0.75;
-    group.add(stripe);
+    lightBar2.position.set(0.36, 1.78, -0.1);
+    group.add(lightBar2);
   }
-  headlights = new THREE.PointLight(0xfff2b0, 0, 22);
+  headlights = new THREE.PointLight(0xfff2b0, isPolice ? 14 : 0, 26);
   headlights.position.set(0, 0.8, 2.4);
   group.add(headlights);
-  return { group, wheels, lightBar, headlights };
+  return { group, wheels, lightBar, lightBar2, headlights };
 }
 
 // A drivable car: position, heading, speed and the per-frame drive step.
 export function createDrivableCar(scene, color, x, z, heading, isPolice, isSport) {
-  const { group, wheels, lightBar, headlights } = buildCarMesh(color, isPolice, isSport);
+  const { group, wheels, lightBar, lightBar2, headlights } = buildCarMesh(color, isPolice, isSport);
   group.position.set(x, 0, z);
   group.rotation.y = heading;
   scene.add(group);
@@ -60,6 +73,7 @@ export function createDrivableCar(scene, color, x, z, heading, isPolice, isSport
     group,
     wheels,
     lightBar,
+    lightBar2,
     headlights,
     x,
     z,
