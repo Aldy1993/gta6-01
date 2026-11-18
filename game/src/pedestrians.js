@@ -12,20 +12,21 @@ const HAIR_COLORS = [0x1a1a1a, 0x6b3a1a, 0xd9d9d9, 0x2c3e50];
 function buildPedestrian(color, seed) {
   const group = new THREE.Group();
   const skin = SKIN_TONES[seed % SKIN_TONES.length];
+  // Capsule torso — rounded shoulders and hips, not a box.
   const body = new THREE.Mesh(
-    new THREE.BoxGeometry(0.7, 1.0, 0.4),
+    new THREE.CapsuleGeometry(0.32, 0.5, 6, 10),
     new THREE.MeshStandardMaterial({ color, roughness: 0.9 }),
   );
-  body.position.y = 0.95;
+  body.position.y = 1.0;
   body.castShadow = true;
   group.add(body);
   // Arms swing with the walk.
   const armMat = new THREE.MeshStandardMaterial({ color: skin, roughness: 0.8 });
-  const armL = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.7, 0.16), armMat);
-  armL.position.set(-0.45, 0.95, 0);
+  const armL = new THREE.Mesh(new THREE.CapsuleGeometry(0.08, 0.45, 4, 8), armMat);
+  armL.position.set(-0.42, 1.0, 0);
   group.add(armL);
   const armR = armL.clone();
-  armR.position.x = 0.45;
+  armR.position.x = 0.42;
   group.add(armR);
   const head = new THREE.Mesh(
     new THREE.SphereGeometry(0.28, 10, 8),
@@ -51,7 +52,7 @@ function buildPedestrian(color, seed) {
     group.add(hair);
   }
   const legMat = new THREE.MeshStandardMaterial({ color: 0x2c3e50, roughness: 0.9 });
-  const legL = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.55, 0.22), legMat);
+  const legL = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.12, 0.55, 8), legMat);
   legL.position.set(-0.16, 0.28, 0);
   group.add(legL);
   const legR = legL.clone();

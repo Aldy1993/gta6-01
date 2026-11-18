@@ -72,6 +72,9 @@ export function createPolice(scene, random) {
       // at the pier gate instead of floating on the water.
       car.x = Math.max(-200, Math.min(205, car.x));
       car.z = Math.max(-205, Math.min(205, car.z));
+      // The harbour corner (x < -150, z > 150) is open water except for
+      // the pier deck itself — hold chasers at the shoreline.
+      if (car.x < -150 && car.z > 148) car.z = 148;
       car.group.position.set(car.x, 0, car.z);
       car.group.rotation.y = car.heading;
       for (const wheel of car.wheels) wheel.rotation.x += car.speed * dt * 2;

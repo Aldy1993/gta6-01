@@ -20,13 +20,48 @@ export function buildCarMesh(color, isPolice, isSport) {
   group.add(cabin);
   const wheelGeo = new THREE.CylinderGeometry(0.38, 0.38, 0.3, 12);
   const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 });
+  const hubGeo = new THREE.CylinderGeometry(0.2, 0.2, 0.32, 10);
+  const hubMat = new THREE.MeshStandardMaterial({ color: 0xb8bec6, roughness: 0.35, metalness: 0.7 });
   const wheels = [];
   for (const [wx, wz] of [[-0.95, 1.4], [0.95, 1.4], [-0.95, -1.4], [0.95, -1.4]]) {
     const wheel = new THREE.Mesh(wheelGeo, wheelMat);
     wheel.rotation.z = Math.PI / 2;
     wheel.position.set(wx, 0.38, wz);
     group.add(wheel);
+    const hub = new THREE.Mesh(hubGeo, hubMat);
+    hub.rotation.z = Math.PI / 2;
+    hub.position.set(wx, 0.38, wz);
+    group.add(hub);
     wheels.push(wheel);
+  }
+  // Front grille + headlights, rear taillights: the car reads as a car
+  // from the front and the back, not a coloured slab.
+  const grille = new THREE.Mesh(
+    new THREE.BoxGeometry(1.5, 0.22, 0.1),
+    new THREE.MeshStandardMaterial({ color: 0x14181d, roughness: 0.5, metalness: 0.4 }),
+  );
+  grille.position.set(0, 0.62, 2.11);
+  group.add(grille);
+  const headMat = new THREE.MeshStandardMaterial({ color: 0xfff6c8, emissive: 0xffe9a0, emissiveIntensity: 1.2, roughness: 0.3 });
+  for (const side of [-1, 1]) {
+    const head = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.18, 0.08), headMat);
+    head.position.set(side * 0.68, 0.72, 2.11);
+    group.add(head);
+  }
+  const tailMat = new THREE.MeshStandardMaterial({ color: 0xcc2222, emissive: 0xaa1111, emissiveIntensity: 1.4, roughness: 0.3 });
+  for (const side of [-1, 1]) {
+    const tail = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.16, 0.08), tailMat);
+    tail.position.set(side * 0.68, 0.78, -2.11);
+    group.add(tail);
+  }
+  if (isSport) {
+    // Rear spoiler on the Sunray GT.
+    const spoiler = new THREE.Mesh(
+      new THREE.BoxGeometry(1.7, 0.08, 0.5),
+      new THREE.MeshStandardMaterial({ color: 0x14181d, roughness: 0.4, metalness: 0.5 }),
+    );
+    spoiler.position.set(0, 1.18, -2.15);
+    group.add(spoiler);
   }
   let lightBar = null;
   let lightBar2 = null;

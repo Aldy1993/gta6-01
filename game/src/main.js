@@ -13,6 +13,7 @@ import { createPedestrians } from './pedestrians.js';
 import { createPolice } from './police.js';
 import { createMissions } from './missions.js';
 import { createCombat } from './combat.js';
+import { createCollectibles } from './collectibles.js';
 import { createHud } from './hud.js';
 import { createMinimap } from './minimap.js';
 import { createAudio } from './audio.js';
@@ -26,7 +27,14 @@ const seed = Number.isInteger(seedParam) ? seedParam : 1337;
 
 const canvas = document.getElementById('game');
 const statusEl = document.getElementById('status');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+const renderer = new THREE.WebGLRenderer({
+  canvas,
+  antialias: true,
+  // Keep the last frame in the drawing buffer: headless screenshots read
+  // the buffer after the page goes idle (the paint tail has finished), and
+  // without this the canvas reads back black. Negligible cost here.
+  preserveDrawingBuffer: true,
+});
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
@@ -50,11 +58,12 @@ const save = loadSave();
 
 function buildPlayerMesh() {
   const group = new THREE.Group();
+  // Capsule torso (shoulders-to-hips in one rounded form), not a box.
   const body = new THREE.Mesh(
-    new THREE.BoxGeometry(0.75, 1.05, 0.42),
+    new THREE.CapsuleGeometry(0.36, 0.55, 6, 12),
     new THREE.MeshStandardMaterial({ color: 0x2ecc71, roughness: 0.85 }),
   );
-  body.position.y = 0.95;
+  body.position.y = 1.0;
   body.castShadow = true;
   group.add(body);
   const head = new THREE.Mesh(
@@ -70,15 +79,22 @@ function buildPlayerMesh() {
   );
   cap.position.y = 1.92;
   group.add(cap);
+  const armMat = new THREE.MeshStandardMaterial({ color: 0xc98d5f, roughness: 0.8 });
+  const armL = new THREE.Mesh(new THREE.CapsuleGeometry(0.09, 0.5, 4, 8), armMat);
+  armL.position.set(-0.46, 1.0, 0);
+  group.add(armL);
+  const armR = armL.clone();
+  armR.position.x = 0.46;
+  group.add(armR);
   const legMat = new THREE.MeshStandardMaterial({ color: 0x2c3e50, roughness: 0.9 });
-  const legL = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.6, 0.24), legMat);
+  const legL = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.13, 0.6, 8), legMat);
   legL.position.set(-0.17, 0.3, 0);
   group.add(legL);
   const legR = legL.clone();
   legR.position.x = 0.17;
   group.add(legR);
   scene.add(group);
-  return { group, legL, legR };
+  return { group, legL, legR, armL, armR };
 }
 
 const game = {
@@ -99,6 +115,7 @@ const game = {
 const traffic = createTraffic(scene, random);
 const pedestrians = createPedestrians(scene, random);
 const police = createPolice(scene, random);
+const collectibles = createCollectibles(scene, save);
 let missions = createMissions(scene, save);
 const combat = createCombat(scene);
 
@@ -286,9 +303,13 @@ function stepPlayer(dt) {
     p.walkPhase += dt * speed * 1.6;
     p.mesh.legL.rotation.x = Math.sin(p.walkPhase) * 0.7;
     p.mesh.legR.rotation.x = -Math.sin(p.walkPhase) * 0.7;
+    p.mesh.armL.rotation.x = -Math.sin(p.walkPhase) * 0.55;
+    p.mesh.armR.rotation.x = Math.sin(p.walkPhase) * 0.55;
   } else {
     p.mesh.legL.rotation.x *= 0.8;
     p.mesh.legR.rotation.x *= 0.8;
+    p.mesh.armL.rotation.x *= 0.8;
+    p.mesh.armR.rotation.x *= 0.8;
   }
   p.mesh.group.position.set(p.x, 0, p.z);
   p.mesh.group.rotation.y = p.heading;
@@ -368,6 +389,16 @@ function stepWorld(dt) {
   police.step(dt, playerPos(), game.wanted, world.resolveCollision);
   missions.step(dt);
   combat.step(dt, game.player, pedestrians);
+  collectibles.step(dt, playerPos(), (amount) => {
+    game.money += amount;
+    save.money = game.money;
+    save.packages = collectibles.collected();
+    writeSave(save);
+    hud.setMoney(game.money);
+    hud.setPackages(collectibles.count, collectibles.total);
+    hud.toast(`Package secured! +$${amount} — ${collectibles.count}/${collectibles.total} Solano packages`, 3);
+    audio.pickup();
+  });
   updateWanted(dt);
   audio.setSiren(game.wanted > 0, dt);
   hud.setMission(missions.statusText(playerPos()));
@@ -393,6 +424,7 @@ function startGame() {
   audio.unlock();
   hud.setMoney(game.money);
   hud.setWanted(game.wanted);
+  hud.setPackages(collectibles.count, collectibles.total);
   hud.setMission(missions.statusText(playerPos()));
   hud.toast(missions.current() ? missions.current().briefing : 'Free roam — Port Solano is yours.', 5);
   announce('Playing Port Solano.');
@@ -531,30 +563,34 @@ function loop(now) {
   input.endFrame();
 }
 
-// Screenshot mode: stage the scene from a fresh world, then keep the loop
-// running (autopilot drives) so the frame is a live render.
+// Screenshot mode: stage the scene from a fresh world, pre-step the live
+// sim synchronously so the first rendered frame already shows real motion,
+// then keep the loop running live (autopilot still driving) for a short
+// tail. The speedometer reads the car's genuine sim speed — never faked.
 if (shotName) {
   game.screen = 'play';
   document.getElementById('title-screen').classList.add('hidden');
   const staged = stageShot(shotName, game, { setMissionForShot, traffic, police, pedestrians });
-  void staged;
-  // Frozen composition: no autopilot driving (the step count before the
-  // screenshot is unpredictable under virtual time), camera snapped to
-  // its final framing now. Traffic, pedestrians and police still animate
-  // around the frozen subjects; staged cruisers/walkers hold their marks.
-  game.api.setAutopilot(null);
+  // v3: synchronous pre-step BEFORE the first render. Under headless
+  // virtual time only a handful of rAF frames run before the screenshot,
+  // so the sim must already be at speed when frame one is painted.
+  if (staged.drive) game.api.setAutopilot(staged.drive);
+  const preSteps = staged.preSteps || 120;
+  for (let i = 0; i < preSteps; i += 1) stepWorld(STEP);
   game.api.snapCamera();
   hud.setMoney(game.money);
   hud.setWanted(game.wanted);
+  hud.setPackages(collectibles.count, collectibles.total);
   let painted = 0;
   const paintLoop = () => {
     stepWorld(STEP);
     render();
     painted += 1;
-    // v2: 90 steps (1.5 s) only — under virtual-time the frame count is
-    // what the screenshot actually gets, and a short run keeps the staged
-    // subjects near their marks instead of driving ~100 m past them.
-    if (painted < 90) requestAnimationFrame(paintLoop);
+    // v3: short tail only (15 steps). The autopilot keeps driving, so a
+    // long tail would carry the staged subjects out of their marks — past
+    // the cruisers on the chase, off the pier end on the mission. The
+    // pre-step already put the sim at speed; the tail just keeps it live.
+    if (painted < 15) requestAnimationFrame(paintLoop);
     else window.__shotReady = true;
   };
   requestAnimationFrame(paintLoop);

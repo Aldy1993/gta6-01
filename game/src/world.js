@@ -49,7 +49,52 @@ function makeBuilding(random, x, z, w, d, h, texture, roofColor) {
     new THREE.MeshStandardMaterial({ color: 0x5a6a72, roughness: 0.9 }),
   );
   plant.position.set(x + w * 0.2, h + 1.4, z - d * 0.18);
-  return { mesh, rim, plant, box: { minX: x - w / 2, maxX: x + w / 2, minZ: z - d / 2, maxZ: z + d / 2 } };
+  const extras = [];
+  if (h < 24) {
+    // Low building: a ground-floor shopfront — a wider base in a warm
+    // plaster tone with a flat canopy slab over the shop level.
+    const base = new THREE.Mesh(
+      new THREE.BoxGeometry(w + 0.7, 3.4, d + 0.7),
+      new THREE.MeshStandardMaterial({ color: 0xe9d8b8, roughness: 0.9 }),
+    );
+    base.position.set(x, 1.7, z);
+    base.castShadow = true;
+    base.receiveShadow = true;
+    extras.push(base);
+    const canopy = new THREE.Mesh(
+      new THREE.BoxGeometry(w + 1.4, 0.28, d + 1.4),
+      new THREE.MeshStandardMaterial({ color: pick(random, [0x2e86c1, 0xd7263d, 0x27ae60, 0x8e44ad]), roughness: 0.7 }),
+    );
+    canopy.position.set(x, 3.55, z);
+    extras.push(canopy);
+  } else {
+    // Tower: rooftop AC units and, on some, a red-tipped antenna so the
+    // skyline stops reading as flat slabs.
+    const acCount = 1 + Math.floor(random() * 3);
+    for (let i = 0; i < acCount; i += 1) {
+      const ac = new THREE.Mesh(
+        new THREE.BoxGeometry(2.2, 1.1, 2.2),
+        new THREE.MeshStandardMaterial({ color: 0x9aa5ad, roughness: 0.8, metalness: 0.3 }),
+      );
+      ac.position.set(x + range(random, -w / 4, w / 4), h + 1.3, z + range(random, -d / 4, d / 4));
+      extras.push(ac);
+    }
+    if (random() < 0.45) {
+      const mast = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.09, 0.12, 7, 6),
+        new THREE.MeshStandardMaterial({ color: 0x3a3f44, roughness: 0.6, metalness: 0.5 }),
+      );
+      mast.position.set(x - w * 0.25, h + 4.2, z + d * 0.2);
+      extras.push(mast);
+      const tip = new THREE.Mesh(
+        new THREE.SphereGeometry(0.22, 8, 6),
+        new THREE.MeshStandardMaterial({ color: 0xff2222, emissive: 0xff2222, emissiveIntensity: 2 }),
+      );
+      tip.position.set(x - w * 0.25, h + 7.8, z + d * 0.2);
+      extras.push(tip);
+    }
+  }
+  return { mesh, rim, plant, extras, box: { minX: x - w / 2, maxX: x + w / 2, minZ: z - d / 2, maxZ: z + d / 2 } };
 }
 
 function makePalm(x, z) {
@@ -315,6 +360,7 @@ export function createWorld(scene, random) {
       group.add(b.mesh);
       group.add(b.rim);
       group.add(b.plant);
+      for (const extra of b.extras) group.add(extra);
       colliders.push(b.box);
     }
   }
@@ -359,6 +405,73 @@ export function createWorld(scene, random) {
   for (const lx of ROAD_LINES) {
     for (const lz of ROAD_LINES) {
       if ((lx + lz) % 88 === 0) group.add(makeLamp(lx + 8, lz + 8));
+    }
+  }
+
+  // Fire hydrants on the sidewalks — small red props that break up the
+  // long pale curb lines.
+  function makeHydrant(x, z) {
+    const hydrant = new THREE.Group();
+    const red = new THREE.MeshStandardMaterial({ color: 0xc0392b, roughness: 0.55, metalness: 0.25 });
+    const bodyH = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.3, 0.75, 8), red);
+    bodyH.position.y = 0.38;
+    hydrant.add(bodyH);
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(0.27, 8, 6, 0, Math.PI * 2, 0, Math.PI / 2), red);
+    dome.position.y = 0.75;
+    hydrant.add(dome);
+    const capMat = new THREE.MeshStandardMaterial({ color: 0xf1c40f, roughness: 0.5, metalness: 0.4 });
+    for (const side of [-1, 1]) {
+      const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.18, 8), capMat);
+      cap.rotation.z = Math.PI / 2;
+      cap.position.set(side * 0.32, 0.45, 0);
+      hydrant.add(cap);
+    }
+    hydrant.position.set(x, 0, z);
+    return hydrant;
+  }
+  for (const hx of [-110, 66]) {
+    for (let t = -176; t <= 176; t += 44) group.add(makeHydrant(hx + 8.5, t));
+  }
+  for (let t = -176; t <= 176; t += 44) group.add(makeHydrant(t, -101.5));
+
+  // Green street-name plates on poles at the downtown corners.
+  function makeStreetSign(x, z, rotY) {
+    const sign = new THREE.Group();
+    const pole = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.07, 0.09, 3.2, 6),
+      new THREE.MeshStandardMaterial({ color: 0x3a3f44, roughness: 0.6, metalness: 0.5 }),
+    );
+    pole.position.y = 1.6;
+    sign.add(pole);
+    const plate = new THREE.Mesh(
+      new THREE.BoxGeometry(2.4, 0.55, 0.08),
+      new THREE.MeshStandardMaterial({ color: 0x1e6b34, roughness: 0.6 }),
+    );
+    plate.position.y = 3.1;
+    sign.add(plate);
+    sign.position.set(x, 0, z);
+    sign.rotation.y = rotY;
+    return sign;
+  }
+  for (const [sx, sz, rot] of [[-30, -30, 0], [30, -14, Math.PI / 2], [-14, 30, Math.PI / 2], [30, 30, 0]]) {
+    group.add(makeStreetSign(sx, sz, rot));
+  }
+
+  // Crosswalks at the four downtown intersections: white stripes across
+  // both roads, so the junctions read as crossings, not bare asphalt.
+  const crossMat = new THREE.MeshBasicMaterial({ color: 0xe8e8e8 });
+  for (const cx of [-22, 22]) {
+    for (const cz of [-22, 22]) {
+      for (let s = -4; s <= 4; s += 1.6) {
+        const stripeNS = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 5.4), crossMat);
+        stripeNS.rotation.x = -Math.PI / 2;
+        stripeNS.position.set(cx + s, 0.045, cz + 8.5);
+        group.add(stripeNS);
+        const stripeEW = new THREE.Mesh(new THREE.PlaneGeometry(5.4, 0.9), crossMat);
+        stripeEW.rotation.x = -Math.PI / 2;
+        stripeEW.position.set(cx + 8.5, 0.045, cz + s);
+        group.add(stripeEW);
+      }
     }
   }
 

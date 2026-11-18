@@ -5,6 +5,7 @@ export function createHud() {
   const root = document.getElementById('hud');
   const moneyEl = document.getElementById('hud-money');
   const starsEl = document.getElementById('hud-stars');
+  const packagesEl = document.getElementById('hud-packages');
   const speedEl = document.getElementById('hud-speed');
   const missionEl = document.getElementById('hud-mission');
   const toastEl = document.getElementById('hud-toast');
@@ -20,6 +21,10 @@ export function createHud() {
     for (let i = 0; i < 5; i += 1) out += i < stars ? '★' : '☆';
     starsEl.textContent = out;
     starsEl.classList.toggle('hot', stars > 0);
+  }
+
+  function setPackages(found, total) {
+    packagesEl.textContent = `PKG ${found}/${total}`;
   }
 
   function setSpeed(kmh, driving) {
@@ -47,5 +52,5 @@ export function createHud() {
     }
   }
 
-  return { setMoney, setWanted, setSpeed, setMission, toast, setHint, step, root };
+  return { setMoney, setWanted, setPackages, setSpeed, setMission, toast, setHint, step, root };
 }
