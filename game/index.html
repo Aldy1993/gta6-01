@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Port Solano — Rico Vega</title>
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #1a0f14;
+    font-family: 'Trebuchet MS', Verdana, sans-serif; }
+  #game { display: block; width: 100vw; height: 100vh; }
+  #hud { position: fixed; inset: 0; pointer-events: none; color: #fff; }
+  #hud-money { position: absolute; top: 14px; right: 18px; font-size: 28px; font-weight: bold;
+    color: #7dff8a; text-shadow: 2px 2px 0 #000; }
+  #hud-stars { position: absolute; top: 48px; right: 18px; font-size: 26px; letter-spacing: 4px;
+    color: #ffd23f; text-shadow: 2px 2px 0 #000; }
+  #hud-stars.hot { color: #ff3b30; animation: blink 0.7s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: 0.55; } }
+  #hud-mission { position: absolute; top: 14px; left: 18px; max-width: 560px; font-size: 17px;
+    font-weight: bold; background: rgba(0,0,0,0.55); padding: 8px 12px; border-left: 4px solid #ffd23f;
+    border-radius: 4px; text-shadow: 1px 1px 0 #000; }
+  #hud-speed { position: absolute; bottom: 18px; right: 22px; font-size: 30px; font-weight: bold;
+    text-shadow: 2px 2px 0 #000; }
+  #hud-hint { position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%);
+    font-size: 15px; background: rgba(0,0,0,0.55); padding: 6px 12px; border-radius: 4px; }
+  #hud-toast { position: absolute; top: 110px; left: 50%; transform: translateX(-50%);
+    font-size: 22px; font-weight: bold; color: #ffd23f; text-shadow: 2px 2px 0 #000;
+    opacity: 0; transition: opacity 0.3s; text-align: center; }
+  #hud-toast.show { opacity: 1; }
+  #minimap { position: absolute; left: 16px; bottom: 16px; width: 190px; height: 190px;
+    border: 2px solid rgba(255,255,255,0.65); border-radius: 50%; background: rgba(12,20,28,0.85); }
+  .screen { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; color: #fff; text-align: center;
+    background: linear-gradient(160deg, rgba(255,140,60,0.92), rgba(120,30,80,0.94)); z-index: 5; }
+  .screen h1 { font-size: 64px; margin: 0; letter-spacing: 4px; text-shadow: 3px 3px 0 #000; }
+  .screen h2 { font-size: 22px; margin: 8px 0 4px; color: #ffd23f; }
+  .screen p { max-width: 620px; font-size: 16px; line-height: 1.5; margin: 10px 20px; }
+  .screen button { pointer-events: auto; font-size: 22px; padding: 12px 34px; margin-top: 14px;
+    background: #ffd23f; color: #20100a; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+  .screen button:hover { background: #ffe27a; }
+  .screen .keys { font-size: 14px; color: #ffe9c9; }
+  .hidden { display: none !important; }
+  #status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+</style>
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.min.js" } }
+</script>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="hud">
+  <div id="hud-mission">Port Solano</div>
+  <div id="hud-money">$40</div>
+  <div id="hud-stars">☆☆☆☆☆</div>
+  <div id="hud-toast"></div>
+  <canvas id="minimap"></canvas>
+  <div id="hud-speed"></div>
+  <div id="hud-hint">WASD move &middot; E enter car &middot; F punch &middot; M missions &middot; P pause</div>
+</div>
+<div id="title-screen" class="screen">
+  <h1>PORT SOLANO</h1>
+  <h2>Rico Vega owes $2,400. The city is about to pay it.</h2>
+  <p>A sun-soaked coastal city: downtown towers, the harbour pier and the neon night market.
+  Drive a cab, steal a Sunray GT, outrun the Solano PD and deliver the package — three jobs,
+  one debt, no backup. On foot or behind the wheel, the whole city is open.</p>
+  <button id="btn-play">START ENGINE</button>
+  <button id="btn-continue" class="hidden">CONTINUE — JOB <span id="continue-job">1</span></button>
+  <p class="keys">WASD drive / walk &nbsp;·&nbsp; Mouse look &nbsp;·&nbsp; E enter / steal car &nbsp;·&nbsp; F punch &nbsp;·&nbsp; M mission list &nbsp;·&nbsp; P pause</p>
+  <p class="keys">Progress saves automatically in this browser.</p>
+</div>
+<div id="pause-screen" class="screen hidden">
+  <h1>PAUSED</h1>
+  <p id="pause-missions"></p>
+  <button id="btn-resume">RESUME</button>
+  <button id="btn-restart">RESTART STORY</button>
+</div>
+<div id="status" aria-live="polite"></div>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
