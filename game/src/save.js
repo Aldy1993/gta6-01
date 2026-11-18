@@ -2,18 +2,29 @@
 // localStorage only — nothing leaves the player's browser.
 import { SAVE_KEY, START_MONEY } from './config.js';
 
+// A fresh save: starting cash, first mission, no best result yet.
+function freshSave() {
+  return { money: START_MONEY, missionIndex: 0, best: 0 };
+}
+
+// Coerce one stored field back to a number, falling back to `fallback`
+// when the stored value is missing or corrupted.
+function numericField(data, field, fallback) {
+  return typeof data[field] === 'number' ? data[field] : fallback;
+}
+
 export function loadSave() {
   try {
     const raw = window.localStorage.getItem(SAVE_KEY);
-    if (!raw) return { money: START_MONEY, missionIndex: 0, best: 0 };
+    if (!raw) return freshSave();
     const data = JSON.parse(raw);
     return {
-      money: typeof data.money === 'number' ? data.money : START_MONEY,
-      missionIndex: typeof data.missionIndex === 'number' ? data.missionIndex : 0,
-      best: typeof data.best === 'number' ? data.best : 0,
+      money: numericField(data, 'money', START_MONEY),
+      missionIndex: numericField(data, 'missionIndex', 0),
+      best: numericField(data, 'best', 0),
     };
   } catch {
-    return { money: START_MONEY, missionIndex: 0, best: 0 };
+    return freshSave();
   }
 }
 

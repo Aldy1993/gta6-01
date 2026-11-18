@@ -10,26 +10,31 @@ export function createAudio() {
   let sirenHigh = false;
   let unlocked = false;
 
+  // A looping oscillator held at silence until its gain is raised.
+  function loopingOscillator(type, frequency) {
+    const osc = ctx.createOscillator();
+    osc.type = type;
+    osc.frequency.value = frequency;
+    const gain = ctx.createGain();
+    gain.gain.value = 0;
+    osc.connect(gain).connect(ctx.destination);
+    osc.start();
+    return { osc, gain };
+  }
+
+  // Build the context and the two looping voices on first use.
   function ensure() {
     if (ctx) return true;
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       if (!AudioCtx) return false;
       ctx = new AudioCtx();
-      engineOsc = ctx.createOscillator();
-      engineOsc.type = 'sawtooth';
-      engineOsc.frequency.value = 60;
-      engineGain = ctx.createGain();
-      engineGain.gain.value = 0;
-      engineOsc.connect(engineGain).connect(ctx.destination);
-      engineOsc.start();
-      sirenOsc = ctx.createOscillator();
-      sirenOsc.type = 'triangle';
-      sirenOsc.frequency.value = 700;
-      sirenGain = ctx.createGain();
-      sirenGain.gain.value = 0;
-      sirenOsc.connect(sirenGain).connect(ctx.destination);
-      sirenOsc.start();
+      const engine = loopingOscillator('sawtooth', 60);
+      engineOsc = engine.osc;
+      engineGain = engine.gain;
+      const siren = loopingOscillator('triangle', 700);
+      sirenOsc = siren.osc;
+      sirenGain = siren.gain;
       return true;
     } catch {
       return false;
@@ -43,6 +48,7 @@ export function createAudio() {
     unlocked = true;
   }
 
+  // A short one-shot tone that fades out exponentially.
   function blip(freq, dur, type, vol) {
     if (!ensure() || !ctx) return;
     const osc = ctx.createOscillator();
@@ -56,6 +62,7 @@ export function createAudio() {
     osc.stop(ctx.currentTime + dur);
   }
 
+  // A burst of white noise with a linear decay envelope.
   function noiseBurst(dur, vol) {
     if (!ensure() || !ctx) return;
     const len = Math.floor(ctx.sampleRate * dur);
@@ -68,6 +75,11 @@ export function createAudio() {
     gain.gain.value = vol || 0.25;
     src.connect(gain).connect(ctx.destination);
     src.start();
+  }
+
+  // A delayed follow-up blip, for two-note chimes.
+  function blipLater(freq, dur, type, vol, delayMs) {
+    setTimeout(() => blip(freq, dur, type, vol), delayMs);
   }
 
   return {
@@ -100,10 +112,10 @@ export function createAudio() {
     },
     pickup() {
       blip(660, 0.12, 'sine', 0.18);
-      setTimeout(() => blip(880, 0.18, 'sine', 0.18), 110);
+      blipLater(880, 0.18, 'sine', 0.18, 110);
     },
     missionDone() {
-      [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => blip(f, 0.22, 'triangle', 0.16), i * 120));
+      [523, 659, 784, 1047].forEach((f, i) => blipLater(f, 0.22, 'triangle', 0.16, i * 120));
     },
     denied() {
       blip(180, 0.15, 'square', 0.08);

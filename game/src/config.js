@@ -1,12 +1,13 @@
-// Port Solano — shared tuning numbers for the whole game.
-// One place for every speed, distance and reward so balancing never means
-// hunting through gameplay files.
+// Port Solano — every tuning number for the whole game, in one place.
+// Speeds, distances and rewards live here so balancing never means
+// hunting through the gameplay files.
+
+// The city is a square grid of blocks; halfSize is its half-width in units.
+// Golden-hour palette: warm sky, haze, low sun.
 export const WORLD = {
-  // City is a square of blocks; half-size in world units.
   halfSize: 220,
   blockSize: 44,
   roadWidth: 12,
-  // Golden-hour look.
   skyColor: 0xffb36b,
   fogColor: 0xf2a35e,
   sunPosition: [-140, 90, -180],
@@ -45,7 +46,7 @@ export const POLICE = {
   maxCars: 4,
   chaseSpeed: 30,
   ramDamage: 0,
-  // Seconds out of sight before one wanted star fades.
+  // Seconds out of sight before one wanted star fades away.
   coolDownPerStar: 14,
 };
 
