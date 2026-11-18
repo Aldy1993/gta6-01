@@ -109,6 +109,7 @@ const game = {
   autopilot: null, // {target} when a screenshot scene drives itself
   cameraYaw: Math.PI,
   cameraPitch: 0.32,
+  shotCamera: null, // per-shot camera override {dist, height, lookY, fov}
   time: 0,
 };
 
@@ -319,8 +320,10 @@ function updateCamera(dt) {
   const focus = game.driving
     ? { x: game.driving.x, z: game.driving.z, heading: game.driving.heading }
     : { x: game.player.x, z: game.player.z, heading: game.cameraYaw };
-  const dist = game.driving ? 12 : 9.5;
-  const height = game.driving ? 5 : 4.2;
+  const cam = game.shotCamera || {};
+  const dist = cam.dist ?? (game.driving ? 12 : 9.5);
+  const height = cam.height ?? (game.driving ? 5 : 4.2);
+  const lookY = cam.lookY ?? 1.6;
   const yaw = game.driving ? focus.heading : game.cameraYaw;
   const tx = focus.x - Math.sin(yaw) * dist;
   const tz = focus.z - Math.cos(yaw) * dist;
@@ -328,7 +331,7 @@ function updateCamera(dt) {
   camera.position.x += (tx - camera.position.x) * k;
   camera.position.y += (height - camera.position.y) * k;
   camera.position.z += (tz - camera.position.z) * k;
-  camera.lookAt(focus.x, 1.6, focus.z);
+  camera.lookAt(focus.x, lookY, focus.z);
 }
 
 function updateWanted(dt) {
@@ -492,6 +495,15 @@ game.api = {
   setAutopilot(target) {
     game.autopilot = target ? { target } : null;
   },
+  // Per-shot camera framing: {dist, height, lookY, fov}. Applied by
+  // updateCamera/snapCamera; fov takes effect immediately.
+  setCamera(opts) {
+    game.shotCamera = opts || null;
+    if (opts && opts.fov) {
+      camera.fov = opts.fov;
+      camera.updateProjectionMatrix();
+    }
+  },
   // Snap the chase camera to its final framing at once. Under headless
   // virtual time only ~10-35 sim steps actually run before the screenshot,
   // so the lerped camera never converges — staging must be correct on the
@@ -500,10 +512,12 @@ game.api = {
     const focus = game.driving
       ? { x: game.driving.x, z: game.driving.z, heading: game.driving.heading }
       : { x: game.player.x, z: game.player.z, heading: game.cameraYaw };
-    const dist = game.driving ? 12 : 9.5;
-    const height = game.driving ? 5 : 4.2;
+    const cam = game.shotCamera || {};
+    const dist = cam.dist ?? (game.driving ? 12 : 9.5);
+    const height = cam.height ?? (game.driving ? 5 : 4.2);
+    const lookY = cam.lookY ?? 1.6;
     camera.position.set(focus.x - Math.sin(focus.heading) * dist, height, focus.z - Math.cos(focus.heading) * dist);
-    camera.lookAt(focus.x, 1.6, focus.z);
+    camera.lookAt(focus.x, lookY, focus.z);
   },
   toast: (m, s) => hud.toast(m, s),
   get player() {

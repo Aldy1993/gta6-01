@@ -147,7 +147,7 @@ function neonSign(text, color, width) {
   const g = canvas.getContext('2d');
   g.fillStyle = '#12081f';
   g.fillRect(0, 0, 256, 64);
-  g.font = 'bold 34px sans-serif';
+  g.font = 'bold 28px sans-serif';
   g.textAlign = 'center';
   g.textBaseline = 'middle';
   g.shadowColor = color;
@@ -317,6 +317,26 @@ export function createWorld(scene, random) {
   boat.position.set(-228, 0, 232);
   boat.rotation.y = 0.25;
   group.add(boat);
+  // Foam rings where the pier posts meet the water, and a few pale wave
+  // lines on the sea beside the pier, so the water reads as water.
+  const foamMat = new THREE.MeshBasicMaterial({ color: 0xeaf6f8, transparent: true, opacity: 0.75 });
+  for (let pz = 156; pz <= 248; pz += 11.5) {
+    for (const px of [-215.5, -204.5]) {
+      const foam = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 0.06, 10), foamMat);
+      foam.position.set(px, 0.05, pz);
+      group.add(foam);
+    }
+  }
+  for (let i = 0; i < 14; i += 1) {
+    const wave = new THREE.Mesh(
+      new THREE.BoxGeometry(range(random, 4, 9), 0.04, 0.35),
+      new THREE.MeshBasicMaterial({ color: 0xd6eef5, transparent: true, opacity: 0.6 }),
+    );
+    const side = i % 2 === 0 ? -1 : 1;
+    wave.position.set(-210 + side * range(random, 14, 60), 0.04, range(random, 160, 280));
+    wave.rotation.y = range(random, -0.4, 0.4);
+    group.add(wave);
+  }
   // Shipping containers stacked by the harbour gate.
   const containerColors = [0xd7263d, 0x2e86c1, 0xf39c12, 0x27ae60, 0x8e44ad];
   const containerSpots = [
@@ -396,6 +416,32 @@ export function createWorld(scene, random) {
     sign.rotation.y = rot;
     group.add(sign);
   }
+
+  // Boardwalk street market: two stalls + a neon sign across the avenue
+  // gap north of the boardwalk (x=-60), so the street screenshot has the
+  // market in its background instead of bare facades. The z=108-112 band
+  // sits between the two rows of block buildings, clear of their walls.
+  for (const [sx, stallColor] of [[-66, 0xe74c3c], [-52, 0x3498db]]) {
+    const stall = new THREE.Group();
+    const box = new THREE.Mesh(
+      new THREE.BoxGeometry(5, 2.4, 4),
+      new THREE.MeshStandardMaterial({ color: stallColor, roughness: 0.8 }),
+    );
+    box.position.y = 1.2;
+    stall.add(box);
+    const roof = new THREE.Mesh(
+      new THREE.ConeGeometry(4.2, 1.8, 4),
+      new THREE.MeshStandardMaterial({ color: 0xfdfefe, roughness: 0.7 }),
+    );
+    roof.position.y = 3.3;
+    roof.rotation.y = Math.PI / 4;
+    stall.add(roof);
+    stall.position.set(sx, 0, 110);
+    group.add(stall);
+  }
+  const marketSign = neonSign('NIGHT MARKET', '#ff5fa2', 16);
+  marketSign.position.set(-59, 8.5, 108);
+  group.add(marketSign);
 
   // Palms along the boardwalk, lamps at intersections.
   for (let t = -180; t <= 180; t += 22) {

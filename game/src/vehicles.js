@@ -35,24 +35,56 @@ export function buildCarMesh(color, isPolice, isSport) {
     wheels.push(wheel);
   }
   // Front grille + headlights, rear taillights: the car reads as a car
-  // from the front and the back, not a coloured slab.
+  // from the front and the back, not a coloured slab. The sport body is
+  // longer (half-length 2.3 vs 2.1), so every face detail is placed off
+  // the true half-length — v3 buried the GT's lights inside its own body.
+  const halfLen = isSport ? 2.3 : 2.1;
+  const frontZ = halfLen + 0.01;
+  const rearZ = -halfLen - 0.01;
   const grille = new THREE.Mesh(
     new THREE.BoxGeometry(1.5, 0.22, 0.1),
     new THREE.MeshStandardMaterial({ color: 0x14181d, roughness: 0.5, metalness: 0.4 }),
   );
-  grille.position.set(0, 0.62, 2.11);
+  grille.position.set(0, 0.62, frontZ);
   group.add(grille);
   const headMat = new THREE.MeshStandardMaterial({ color: 0xfff6c8, emissive: 0xffe9a0, emissiveIntensity: 1.2, roughness: 0.3 });
   for (const side of [-1, 1]) {
     const head = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.18, 0.08), headMat);
-    head.position.set(side * 0.68, 0.72, 2.11);
+    head.position.set(side * 0.68, 0.72, frontZ);
     group.add(head);
   }
   const tailMat = new THREE.MeshStandardMaterial({ color: 0xcc2222, emissive: 0xaa1111, emissiveIntensity: 1.4, roughness: 0.3 });
   for (const side of [-1, 1]) {
     const tail = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.16, 0.08), tailMat);
-    tail.position.set(side * 0.68, 0.78, -2.11);
+    tail.position.set(side * 0.68, 0.78, rearZ);
     group.add(tail);
+  }
+  // Full-width taillight bar joining the two lamps, dark rear bumper,
+  // licence plate and twin exhaust tips — the rear reads as a rear,
+  // especially on the GT in the chase shot.
+  const tailBar = new THREE.Mesh(
+    new THREE.BoxGeometry(1.8, 0.14, 0.06),
+    new THREE.MeshStandardMaterial({ color: 0xdd2222, emissive: 0xcc1111, emissiveIntensity: 1.8, roughness: 0.3 }),
+  );
+  tailBar.position.set(0, 0.86, rearZ - 0.01);
+  group.add(tailBar);
+  const rearBumper = new THREE.Mesh(
+    new THREE.BoxGeometry(1.95, 0.26, 0.1),
+    new THREE.MeshStandardMaterial({ color: 0x14181d, roughness: 0.5, metalness: 0.4 }),
+  );
+  rearBumper.position.set(0, 0.3, rearZ - 0.01);
+  group.add(rearBumper);
+  const plate = new THREE.Mesh(
+    new THREE.BoxGeometry(0.72, 0.22, 0.04),
+    new THREE.MeshStandardMaterial({ color: 0xf5f5f5, roughness: 0.5 }),
+  );
+  plate.position.set(0, 0.58, rearZ - 0.03);
+  group.add(plate);
+  const exhaustMat = new THREE.MeshStandardMaterial({ color: 0x222226, roughness: 0.4, metalness: 0.7 });
+  for (const side of [-1, 1]) {
+    const exhaust = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.13, 0.14), exhaustMat);
+    exhaust.position.set(side * 0.62, 0.16, rearZ - 0.06);
+    group.add(exhaust);
   }
   if (isSport) {
     // Rear spoiler on the Sunray GT.
@@ -60,7 +92,7 @@ export function buildCarMesh(color, isPolice, isSport) {
       new THREE.BoxGeometry(1.7, 0.08, 0.5),
       new THREE.MeshStandardMaterial({ color: 0x14181d, roughness: 0.4, metalness: 0.5 }),
     );
-    spoiler.position.set(0, 1.18, -2.15);
+    spoiler.position.set(0, 1.18, rearZ + 0.18);
     group.add(spoiler);
   }
   let lightBar = null;

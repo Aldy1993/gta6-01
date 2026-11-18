@@ -26,13 +26,19 @@ function stageCover(game, ctx) {
   ctx.setMissionForShot(0);
   game.api.setMoney(240);
   game.api.setWanted(0);
+  // Tighter, lower camera, aimed up at the skyline: the cab fills the
+  // frame and the bottom half stops being empty asphalt.
+  game.api.setCamera({ dist: 9, height: 3.0, lookY: 3.2 });
   // Avenue x=22 heading north into downtown, sunset ahead.
   game.api.giveCar(0xf1c40f, 22, 120, Math.PI, false);
   // Traffic cars on the same avenue, ahead of the cab, in the edge lanes.
+  // Spots are set so that AFTER the 3 s pre-step (traffic rolls ~21
+  // units, the cab ~59) they still sit 10-60 units ahead of the cab —
+  // mid-frame and clearly readable, not dots on the horizon.
   const spots = [
-    { x: 18, z: 80, heading: Math.PI },
-    { x: 26, z: 50, heading: 0 },
-    { x: 18, z: 20, heading: Math.PI },
+    { x: 18, z: 52, heading: Math.PI },
+    { x: 26, z: 30, heading: 0 },
+    { x: 18, z: 30, heading: Math.PI },
   ];
   ctx.traffic.cars.slice(0, 3).forEach((car, i) => {
     car.x = spots[i].x;
@@ -56,6 +62,9 @@ function stageChase(game, ctx) {
   m.setPhase('carry');
   game.api.setMoney(685);
   game.api.setWanted(3);
+  // Pulled-back, wider camera (fov 70): the street reads wide instead
+  // of a canyon, and the GT's detailed rear stays fully in frame.
+  game.api.setCamera({ dist: 14, height: 5.5, fov: 70 });
   const car = game.api.giveCar(0xd7263d, -60, 22, Math.PI / 2, true);
   void car;
   // Two cruisers ahead of the GT, facing it head-on down the avenue.
@@ -70,18 +79,23 @@ function stageChase(game, ctx) {
 // mission beacon ahead. Rico stands at (-60, 142) facing north; six
 // walkers wait on the sidewalk just ahead of him, several facing back
 // toward the camera. Rico walks north past them, toward the market.
+// v3.1: walkers sit 4-15 units ahead of where Rico ENDS (z~128 after the
+// 2 s pre-step), spread across the camera's view, so 5-6 read in frame
+// instead of 3 — with the boardwalk market stalls behind them.
 function stageStreet(game, ctx) {
   ctx.setMissionForShot(0);
   game.api.setMoney(40);
   game.api.setWanted(0);
+  // Slightly tighter on-foot camera so Rico and the crowd read bigger.
+  game.api.setCamera({ dist: 8.5, height: 3.8 });
   game.api.teleport(-60, 142, Math.PI);
   const spots = [
-    [-70, 128, 0.3],
-    [-58, 132, -0.4],
-    [-68, 135, 0.1],
-    [-56, 126, 0.2],
-    [-64, 136, 3.0],
-    [-73, 123, 0.5],
+    [-71, 120, 0.2],
+    [-66, 115, -0.3],
+    [-61, 118, 0.1],
+    [-56, 113, 0.4],
+    [-68, 124, 3.1],
+    [-53, 118, -0.2],
   ];
   for (const [x, z, heading] of spots) ctx.pedestrians.placeWalker(x, z, heading);
   game.api.toast('First Fare — pick up the passenger', 5);
@@ -101,8 +115,10 @@ function stageMission(game, ctx) {
   game.api.setWanted(2);
   // On the pier, already pointed at the drop point.
   game.api.giveCar(0x2e86c1, -210, 190, 0, false);
-  // Cruiser on the deck, left lane, facing the car head-on.
-  ctx.police.placeCruiser(-213.5, 240, Math.PI);
+  // Cruiser on the deck, left lane, facing the car head-on. Staged ~18 m
+  // ahead of where the car ENDS after the pre-step (z~202), so it reads
+  // large in frame instead of a dot at the pier end.
+  ctx.police.placeCruiser(-213.5, 220, Math.PI);
   game.api.toast('The Drop — deliver the package to Pier 9', 5);
   // 60 steps (1 s): car at ~60 km/h and rising, still well up the pier.
   return { preSteps: 60, drive: { x: -210, z: 238 } };
